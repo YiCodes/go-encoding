@@ -308,11 +308,6 @@ func (j *Reader) readNumberToken() jsonToken {
 	return j.newBasicToken(kindNumber, b.String(), pos)
 }
 
-func (j *Reader) setTokenPos(t jsonToken) jsonToken {
-	t.Pos(&position{offset: j.offset, row: j.row, col: j.col})
-	return t
-}
-
 func (j *Reader) peekToken() jsonToken {
 	if j.peekedToken == nil {
 		j.peekedToken = j.nextToken()
@@ -335,6 +330,10 @@ func (j *Reader) mayEat(kind tokenKind) bool {
 	t := j.peekToken()
 
 	return t.Kind() == kind
+}
+
+func (j *Reader) TryReadNull() bool {
+	return j.mayEat(kindNull)
 }
 
 func (j *Reader) ReadStartObject() error {
@@ -370,10 +369,14 @@ func (j *Reader) TryReadEndArray() bool {
 }
 
 func (j *Reader) ReadStartField(fieldName string) error {
-	_, err := j.eat(kindString)
+	t, err := j.eat(kindString)
 
 	if err != nil {
 		return err
+	}
+
+	if strToken := t.(*jsonStringToken); strToken.str != fieldName {
+		return fmt.Errorf("except fieldName is %v, but %v", fieldName, strToken.str)
 	}
 
 	j.eat(kindColon)
@@ -405,6 +408,16 @@ func (j *Reader) ReadInt() (int, error) {
 	}
 
 	return strconv.Atoi(t.String())
+}
+
+func (j *Reader) ReadInt64() (int64, error) {
+	t, err := j.eat(kindNumber)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseInt(t.String(), 0, 64)
 }
 
 func (j *Reader) ReadFloat() (float64, error) {
