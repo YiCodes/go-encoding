@@ -376,7 +376,7 @@ func (j *Reader) ReadStartField(fieldName string) error {
 	}
 
 	if strToken := t.(*jsonStringToken); strToken.str != fieldName {
-		return fmt.Errorf("except fieldName is %v, but %v", fieldName, strToken.str)
+		return fmt.Errorf("except fieldName is %v, but %v %v", fieldName, strToken.str, strToken.Pos(nil).String())
 	}
 
 	j.eat(kindColon)
